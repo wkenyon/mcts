@@ -10,19 +10,23 @@ import Test.QuickCheck.All
 import Test.QuickCheck.Modifiers
 import Data.List
 import qualified Debug.Trace as Trace
-import Maybe
-import System( getArgs )
+import Data.Maybe
 import System.IO
-import Game.ConnectkPrime
-import Game.Game
-import MCTS.Mcts
+import MCTS.Sample.ConnectkPrime
+import MCTS.Game
+import MCTS.Core
+import MCTS
 import Control.Monad
 import Control.Monad.ST
-import Data.Array.MArray
+import Data.Array.Unsafe
 import System.Process
 import System.Exit
 import Data.Array.Unboxed
 playerList0 = B:B:A:A:playerList0
+
+iterativeMcts :: (Game a, RandomGen g) => MCT a -> Int -> g -> MCT a
+iterativeMcts t 0 g = t
+iterativeMcts t n g = let (a, _,g') = mcts t defaultConfig g in iterativeMcts a (n-1) g'
 
 
 main = do 
@@ -41,9 +45,11 @@ main = do
                                                       return (a,b)
         hPrint stderr $ show (noteToSelfWin,noteToSelfSave)
         let doTree a = do
-                        let tree = iterativeMcts (expand $ gameToLeaf $ Connectk' k arr playerList (a, [])) 10000 masterGen
-                        hPrint stderr tree
-                        let (Connectk' _ board _ _) = last $ selectBestMoves 1 tree
+                        let game = Connectk' k arr playerList (a,[])
+                        --let tree = iterativeMcts (expand $ gameToLeaf game) 1000 masterGen
+                        --putStrLn $ show tree
+                        --let (Connectk' _ board _ _) = selectBestMove tree
+                        ((Connectk' _ board _ _),_) <- doTimedMcts game defaultConfig masterGen 5000
                         return (diffs board arr)
         moves <- calculateMoves z' (noteToSelfWin,noteToSelfSave) doTree
         forM moves $ \(x,y)-> do
@@ -69,7 +75,12 @@ main = do
       
 diffs board1 board2 = map (fst . fst) $ filter (\(a,b) -> (a/=b)) $ zip (assocs' board1) $ assocs' board2
 
-
+mainFun = game
+  where raw = [[Nothing, Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing, Nothing, Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing]]
+        zzz = listArray' ((1,1),(9,9)) $ concat raw
+        game = Connectk' 5 zzz playerList ([[]],[])
+        playerList = A:B:playerList
+{-
 mainFun xxx = game
   where raw = [[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Just A,Nothing,Just A,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Just B,Just A,Nothing,Nothing,Nothing],[Nothing,Nothing,Just A,Just B,Just A, Just B,Just A,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Just B,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Just B]]
         zzz = listArray' ((1,1),(9,9)) $ concat raw
@@ -104,4 +115,4 @@ mainFun2 xxx= simulate (Connectk' k board (p:ps) (noteToSelf,noteToNext)) $ mkSt
         simulate'' :: Connectk' -> StdGen -> [Connectk']
         simulate'' x gen = case (currentState x) of InProgress -> let (x', gen') = doPseudoRandomMove gen x in x:simulate'' x' gen'
                                                     a          -> [x]
-
+-}

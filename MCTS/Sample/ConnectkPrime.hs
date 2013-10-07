@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
-module Game.ConnectkPrime where
+{-# LANGUAGE TemplateHaskell, TypeFamilies #-}
+module MCTS.Sample.ConnectkPrime where
 
 import System.Random
 import Data.List
@@ -9,15 +9,16 @@ import Test.QuickCheck.Property
 import Test.QuickCheck.All
 import Test.QuickCheck.Modifiers
 import qualified Debug.Trace as Trace
-import Maybe
-import Game.Game
-import Game.Connectk hiding (A,B,X)
+import Data.Maybe
+import MCTS.Game
+import MCTS.Sample.Connectk hiding (A,B,X)
 import Control.Monad
 import Control.Monad.ST
-import Data.Array.ST
+import Data.Array.Unsafe
+import Data.Array.ST.Safe
 import Data.Array.Unboxed
 runTests = $quickCheckAll
-z=2
+z=1
 type Move' = (Int,Int)
 type Board' = UArray Move' Int
 type STBoard' s = STUArray s Move' Int
@@ -34,12 +35,12 @@ instance Show Connectk' where
 
 instance Game Connectk' where
         data Player Connectk' = A | B | X deriving (Eq,Enum,Show,Read)
-        allPlayers _ = [A,B]
+        allPlayers = [A,B]
         currentPlayer (Connectk' _ _ turns _) = head turns
         
         legalChildren (Connectk' _ _ [] _) = error "legal children with no turns"
         legalChildren (Connectk' k board (p:ps) (noteToSelf,noteToNext))
-          | null noteToSelf = error "tried to find legalchildren with null noteToSelf"
+          | null noteToSelf = [] -- error "tried to find legalchildren with null noteToSelf"
           | (not $ any null noteToSelf) && p==(head ps) = map (\(x,xs) -> Connectk' k (board' x) ps (xs,noteToNext' x)) $ mergeHead noteToSelf
           | (not $ any null noteToSelf) = map (\(x,xs) -> Connectk' k (board' x) ps (changeOverMoves' x,[])) $ mergeHead noteToSelf
           | p==(head ps) = map (\x -> Connectk' k (board' x) ps ([[]], noteToNext' x)) moves
@@ -62,16 +63,14 @@ instance Game Connectk' where
                        | otherwise = InProgress
                        where (Connectk' _ board ps (noteToSelf,noteToNext)) = g
         
-        doPseudoRandomMove gen game = pick gen $ 
-                                      legalChildren game
- 
-        simulate (Connectk' k board turns (noteToSelf, noteToNext)) gen = runST $ do
+        doSimulation (Connectk' k board turns (noteToSelf, noteToNext)) gen = runST $ do
           board' <- thaw board
           doMoves board' (savMoves++moves) turns noteToNext k gen''
           where
             emptySquares = map fst $ filter (\a->isNothing $ snd a) $ assocs' board 
-            (moves, gen') = randomPermutation gen emptySquares
-            (savMoves, gen'') = pick gen' noteToSelf
+            (gen', gen'') = split gen
+            (moves,_) = randomPermutation gen' emptySquares
+            (savMoves, gen''') = pick gen'' noteToSelf
 
 nextp :: [Player Connectk'] -> Player Connectk'
 nextp (p:ps) | p==(head ps) = nextp ps

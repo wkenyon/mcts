@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
-module Game.Connectk where
+{-# LANGUAGE TemplateHaskell, TypeFamilies #-}
+module MCTS.Sample.Connectk where
 import System.Random
 import Data.List
 import qualified Test.QuickCheck as QuickCheck
@@ -8,8 +8,8 @@ import Test.QuickCheck.Property
 import Test.QuickCheck.All
 import Test.QuickCheck.Modifiers
 import qualified Debug.Trace as Trace
-import Maybe
-import Game.Game
+import Data.Maybe
+import MCTS.Game
 import Control.Monad
 import Control.Monad.ST
 import Data.Array.ST
@@ -33,10 +33,10 @@ instance Arbitrary Connectk where
            where 
              doMoves :: Int -> Connectk -> StdGen -> Connectk
              doMoves 0 x _ = x
-             doMoves m x gen = case (currentState x) of InProgress -> let (x', gen') = doPseudoRandomMove gen x in doMoves (m-1) x' gen'
+             doMoves m x gen = case (currentState x) of InProgress -> let (x', gen') = pick gen $ legalChildren x in doMoves (m-1) x' gen'
                                                         _          -> x
              playerList = A:B:playerList :: [Player Connectk]
-             
+             logi a = ceiling $ log $ (fromIntegral a)+1
              emptyBoard n k = Connectk k board playerList
                where 
                  board = replicate n (replicate n Nothing)
@@ -49,8 +49,8 @@ instance Show Connectk where
 
 
 instance Game Connectk where
-        data Player Connectk = A | B | X deriving (Show,Eq)
-        allPlayers _ = [A,B]
+        data Player Connectk = A | B | X deriving (Show,Eq,Read)
+        allPlayers = [A,B]
         currentPlayer (Connectk _ _ turns) = head turns
         legalChildren (Connectk k board []) = undefined
         legalChildren (Connectk k board (p:ps)) = map (\a -> Connectk k a ps) (boardFillAllBlanks board)
@@ -69,9 +69,15 @@ instance Game Connectk where
 
           where winner = firstMatch $ map (kInARow k) [board, transpose $ kDiag $ board, transpose $ kDiag $ map reverse board, transpose board, transpose $ kDiag $ transpose $ board,  transpose $ kDiag $ reverse $ board]
                 Connectk k board turns = s
-        
-        doPseudoRandomMove gen s = pick gen $ legalChildren s 
 
+--        doSimulation (Connectk k board turns) gen = runST $ do
+--          let board' = thaw board
+--          doMoves board' (savMoves++moves) turns noteToNext k gen''
+--          where
+--            emptySquares = map fst $ filter (\a->isNothing $ snd a) $ assocs' board
+--            (moves, gen') = randomPermutation gen emptySquares
+--            (savMoves, gen'') = pick gen' noteToSelf
+        
 kInARow :: Int -> Board -> Maybe (Player Connectk)
 kInARow k x = firstMatch $ map (\a->row a Nothing) x
   where

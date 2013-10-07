@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
-module Game.TicTacToe where
+{-# LANGUAGE TemplateHaskell, TypeFamilies, FlexibleInstances #-}
+module MCTS.Sample.TicTacToe where
 
 import qualified Data.Set as Set
 import System.Random
@@ -11,10 +11,13 @@ import Test.QuickCheck.All
 import Test.QuickCheck.Modifiers
 import Data.List
 import qualified Debug.Trace as Trace
-import Maybe
-import Game.Game
+import Data.Maybe
+import MCTS.Game
         
 runTests = $quickCheckAll
+
+logi :: Int -> Int
+logi a = ceiling $ log $ (fromIntegral a)+1
 
 data TicTacToe = TicTacToe (Set.Set Int) (Set.Set Int) (Set.Set Int) deriving (Show,Eq)
 instance Arbitrary TicTacToe where
@@ -32,7 +35,7 @@ instance Game TicTacToe where
 		then (map (\a -> TicTacToe (Set.delete a x) (Set.insert a y) z)  (Set.toList x))
 		else (map (\a -> TicTacToe (Set.delete a x) y (Set.insert a z))  (Set.toList x))
 
-        allPlayers _ = [A,B]
+        allPlayers = [A,B]
 	
         currentPlayer (TicTacToe x y z) = if ((Set.size y) == (Set.size z)) then A else B
 
@@ -43,8 +46,6 @@ instance Game TicTacToe where
 		| otherwise = InProgress
                 where 
                   f a = if (length a) < 3 then False else 15 `elem` (map sum $ choose 3 a)
-	          
-        doPseudoRandomMove gen board = pick gen (legalChildren board)
 
 instance Arbitrary (Player TicTacToe) where
   arbitrary = QuickCheck.oneof [return A, return B]

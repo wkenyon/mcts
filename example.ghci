@@ -1,0 +1,9 @@
+let zzz = Connectk 3 [[Nothing,Nothing,Nothing,Nothing],[Nothing,Just A,Just A,Nothing],[Nothing,Nothing,Just B,Nothing],[Nothing,Nothing,Nothing,Nothing]] (tail playerList)
+
+let zzz = Connectk 4 [[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Just A,Just A,Just A, Nothing,Nothing],[Nothing,Just B,Just B,Just B, Nothing, Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing],[Nothing,Nothing,Nothing,Nothing,Nothing,Nothing]] (playerList)
+
+
+runST $ do 
+  let board =  [[Nothing,Nothing,Nothing,Nothing],[Nothing,Just A,Just A,Nothing],[Nothing,Nothing,Just B,Nothing],[Nothing,Nothing,Nothing,Nothing]]
+  arr <- newListArray' ((1,1),(4,4)) $ concat board
+  checkNewAddition arr (2,2) A 3

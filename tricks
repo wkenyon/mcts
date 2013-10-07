@@ -1,0 +1,14 @@
+*Main> :def cond \expr -> return (":cmd if (" ++ expr ++ ") then return \"\" else return \":continue\"")
+*Main> :set stop 0 :cond (x < 3)
+
+QuickCheck.verboseCheck prop_mcts
+
+
+*Main> seq x ()
+*Main> :print x
+x = 1
+
+(for polymmorphism)
+
+:set -fbreak-on-exception
+-XFlexibleInstances

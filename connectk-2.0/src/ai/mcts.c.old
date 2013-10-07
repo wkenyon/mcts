@@ -1,0 +1,109 @@
+
+/*
+
+connectk -- a program to play the connect-k family of games
+Copyright (C) 2007 Jeff Deitch
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+*/
+
+#include "config.h"
+#include <glib.h>
+#include <stdio.h>
+#include "../shared.h"
+
+AIMoves *ai_mcts(const Board *b)
+/* imagine the board is elastic and that each stone has a weight.  The current players stones have
+a different weight than the opposite players stones.  Placing a stone on the board creates a depression,
+and the more stones in an area, the deeper the depression.  This ai chooses the lowest, unplayed tile for
+the next move.  The idea is to create clumps of stones.  */
+{
+	char remaining [80];
+        char*a = &remaining;
+	*a = '[';
+	a++;
+	char black[80];
+        char*B = &black;
+	*B = '[';
+	B++;
+	char white[80];
+        char* c = &white;
+	*c = '[';
+	c++;
+	int MY_PIECE_BLACK;
+	int MY_PIECE_WHITE;
+	if (b->turn==PIECE_BLACK) {
+		MY_PIECE_BLACK=PIECE_BLACK;
+		MY_PIECE_WHITE=PIECE_WHITE;
+	} else if (b->turn==PIECE_WHITE) {
+		MY_PIECE_BLACK=PIECE_WHITE;
+		MY_PIECE_WHITE=PIECE_BLACK;
+	} else {
+		int d = 1/0;
+	}
+
+        AIMoves *moves = aimoves_new();
+	int magic [3][3] =
+       {{8,1,6},
+        {3,5,7},
+        {4,9,2}};
+        AIMove invmagic[9];
+        invmagic[0].x = 2 ;        invmagic[0].y = 1;
+        invmagic[1].x = 3 ;        invmagic[1].y = 3;
+        invmagic[2].x = 1 ;        invmagic[2].y = 2;
+        invmagic[3].x = 1 ;        invmagic[3].y = 3;
+        invmagic[4].x = 2 ;        invmagic[4].y = 2;
+        invmagic[5].x = 3 ;        invmagic[5].y = 1;
+        invmagic[6].x = 3 ;        invmagic[6].y = 2;
+        invmagic[7].x = 1 ;        invmagic[7].y = 1;
+        invmagic[8].x = 2 ;        invmagic[8].y = 3;
+
+	/* find the max weight (i.e. the lowest spot on the board) */
+	
+        for (int x = 1; x <= board_size; x++) {
+		for (int y = 1; y <= board_size; y++) {
+			if (piece_at(b,x,y)==PIECE_NONE){sprintf(a, "%i,",magic[x-1][y-1]);a+=2;}
+			if (piece_at(b,x,y)==MY_PIECE_BLACK){sprintf(B,"%i,",magic[x-1][y-1]);B+=2;}
+			if (piece_at(b,x,y)==MY_PIECE_WHITE){sprintf(c,"%i,",magic[x-1][y-1]);c+=2;}
+		}
+	}
+	if (*(a-1)==',') a--;
+	*a=']';
+	*(a+1)=0;
+	if (*(B-1)==',') B--;
+	*B=']';
+	*(B+1)=0;
+	if ((*(c-1))==',') c--;
+	*c=']';
+	*(c+1)=0;
+	printf("%s %s %s\n", remaining,black,white);
+/*
+        
+	for (int x = 0; x < board_size; x++) {
+		for (int y = 0; y < board_size; y++) {
+			printf("%d %d %d \n", x, y, piece_at(b,x,y));
+			move.weight = (x==xu && y==yu) ?  1 : 0;
+			move.x = x;
+			move.y = y;
+                        aimoves_add(moves, &invmagic[]);
+		}
+	}
+*/
+        moves->utility = 1;
+
+	/* return the array */
+	return moves;
+}
